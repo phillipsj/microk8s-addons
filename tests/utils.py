@@ -65,20 +65,16 @@ def wait_for_pod_state(
     pod, namespace, desired_state, desired_reason=None, label=None, timeout_insec=600
 ):
     """
-    Wait for a a pod state. If you do not specify a pod name and you set instead a label
+    Wait for a pod state. If you do not specify a pod name and you set instead a label
     only the first pod will be checked.
     """
     deadline = datetime.datetime.now() + datetime.timedelta(seconds=timeout_insec)
     while True:
         if datetime.datetime.now() > deadline:
-            raise TimeoutError(
-                "Pod {} not in {} after {} seconds.".format(
-                    pod, desired_state, timeout_insec
-                )
-            )
-        cmd = "po {} -n {}".format(pod, namespace)
+            raise TimeoutError(f"Pod {pod} not in {desired_state} after {timeout_insec} seconds.")
+        cmd = f"po {pod} -n {namespace}"
         if label:
-            cmd += " -l {}".format(label)
+            cmd += f" -l {label}"
         data = kubectl_get(cmd, timeout_insec)
         if pod == "":
             if len(data["items"]) > 0:
@@ -101,7 +97,7 @@ def wait_for_pod_state(
 
 def microk8s_enable(addon, timeout_insec=300):
     """
-    Disable an addon
+    Enable an addon
 
     Args:
         addon: name of the addon
@@ -121,7 +117,7 @@ def microk8s_enable(addon, timeout_insec=300):
 
 def microk8s_disable(addon):
     """
-    Enable an addon
+    Disable an addon
 
     Args:
         addon: name of the addon

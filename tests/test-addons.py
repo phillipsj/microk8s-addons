@@ -1,13 +1,26 @@
-import sh
-import yaml
-
 from utils import microk8s_enable, wait_for_pod_state, microk8s_disable
 
 
 class TestAddons(object):
-    def test_python_demo_nginx(self):
-        microk8s_enable("python-hello-k8s")
-        wait_for_pod_state("", "default", "running", label="app=python-demo-nginx")
-        status = yaml.safe_load(sh.microk8s.status(format="yaml").stdout)
-        expected = {"python-hello-k8s": "enabled"}
-        microk8s_disable("python-hello-k8s")
+    def test_opentelemetry_operator(self):
+        """
+        Sets up and validates OpenTelemetry Operator.
+        """
+        print("Enabling opentelemetry-operator")
+        microk8s_enable("opentelemetry-operator")
+        print("Validating opentelemetry-operator")
+        self.validate_opentelemetry_operator()
+        print("Disabling opentelemetry-operator")
+        microk8s_disable("opentelemetry-operator")
+
+    def validate_opentelemetry_operator(self):
+        """
+        Validate OpenTelemetry Operator.
+        """
+
+        wait_for_pod_state(
+            "",
+            "opentelemetry-operator",
+            "running",
+            label="app.kubernetes.io/component=controller-manager",
+        )
