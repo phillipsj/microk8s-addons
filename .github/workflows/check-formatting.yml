@@ -18,8 +18,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install python3-setuptools
           sudo pip3 install black
-          sudo snap install node --classic
       - name: Check Python formatting
         run: |
           set -eux
-          black --check .
+          black --line-length 100 --check .
