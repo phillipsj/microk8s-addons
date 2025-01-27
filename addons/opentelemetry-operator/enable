@@ -54,7 +54,7 @@ def main(version, namespace, collector_image, values):
     else:
         install_args.extend(["--set", f"manager.collectorImage.repository={collector_image}"])
         cert_manager_status = subprocess.run(
-            [MICROK8S_STATUS, "status", "--addon cert-manager"],
+            [MICROK8S_STATUS, "status", "--addon", "cert-manager"],
             capture_output=True,
             text=True,
         )
