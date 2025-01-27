@@ -54,15 +54,15 @@ def main(version, namespace, collector_image, values):
     else:
         install_args.extend(["--set", f"manager.collectorImage.repository={collector_image}"])
         cert_manager_status = subprocess.run(
-            [MICROK8S_STATUS, "status", "--addon", "cert-manager"],
+            [MICROK8S_STATUS, "--addon", "cert-manager"],
             capture_output=True,
             text=True,
         )
         if cert_manager_status.returncode == 0 and "enabled" in cert_manager_status.stdout:
-            click.echo("Cert-manager is installed. Using Cert-manager certificates instead.")
+            click.echo("CertManager is installed. Using CertManager certificates instead.")
             install_args.extend(["--set", "admissionWebhooks.certManager.enabled=true"])
         else:
-            click.echo("Cert-manager is not installed. Using auto-generated certificates instead.")
+            click.echo("CertManager is not installed. Using auto-generated certificates instead.")
             install_args.extend(["--set", "admissionWebhooks.certManager.enabled=false"])
             install_args.extend(["--set", "admissionWebhooks.autoGenerateCert.enabled=true"])
 
