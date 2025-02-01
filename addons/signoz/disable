@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# addons/signoz/disable
+
+import click
+import os
+import subprocess
+
+DEFAULT_NAMESPACE = "signoz"
+KUBECTL = os.path.expandvars("$SNAP/microk8s-kubectl.wrapper")
+HELMCTL = os.path.expandvars("$SNAP/microk8s-helm.wrapper")
+
+
+@click.command()
+@click.option("--namespace", required=False, default=DEFAULT_NAMESPACE, type=str)
+@click.option(
+    "--purge",
+    is_flag=True,
+    help=f'Purge only when sure, that "{DEFAULT_NAMESPACE}" namespace is not hosting any other services from Argo stack.',
+)
+def main(namespace: str, purge: bool):
+    click.echo("Disabling signoz")
+    subprocess.check_call([HELMCTL, "uninstall", "signoz", "-n", namespace])
+
+    if purge:
+        click.echo(f'Final "{namespace}" namespace deletion.')
+        subprocess.check_call(
+            [
+                KUBECTL,
+                "delete",
+                "--wait=true",
+                "--timeout=180s",
+                "--ignore-not-found=true",
+                "namespace",
+                namespace,
+            ]
+        )
+    else:
+        click.echo("")
+        click.echo(
+            f'WARNING: Final deletion of "{namespace}" namespace must be enforced by: "microk8s disable signoz --purge"'
+        )
+        click.echo("")
+        click.echo(
+            f'Purge only when sure, that "{namespace}" namespace is not hosting any other services.'
+        )
+        click.echo("")
+
+    click.echo("Disabled signoz")
+
+
+if __name__ == "__main__":
+    main()
