@@ -22,6 +22,9 @@ def main(namespace: str, purge: bool):
     subprocess.check_call([HELMCTL, "uninstall", "signoz", "-n", namespace])
 
     if purge:
+        subprocess.check_call(
+            [KUBECTL, "-n", namespace, "delete",  "pvc", "--selector", "app.kubernetes.io/instance=signoz"]
+        )
         click.echo(f'Final "{namespace}" namespace deletion.')
         subprocess.check_call(
             [

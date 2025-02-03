@@ -13,7 +13,7 @@ MICROK8S_STATUS = os.path.expandvars("$SNAP/microk8s-status.wrapper")
 
 
 @click.command()
-@click.option("--version", required=False, default="0.78.2", type=str)
+@click.option("--version", required=False, default="0.68.1", type=str)
 @click.option("--namespace", required=False, default=DEFAULT_NAMESPACE, type=str)
 @click.option("--values", required=False, default="", type=str)
 def main(version, namespace, collector_image, values):
@@ -45,20 +45,6 @@ def main(version, namespace, collector_image, values):
     if values:
         click.echo(f"Using provided values file: {values}")
         install_args.extend(["-f", values])
-    else:
-        install_args.extend(["--set", f"manager.collectorImage.repository={collector_image}"])
-        cert_manager_status = subprocess.run(
-            [MICROK8S_STATUS, "--addon", "cert-manager"],
-            capture_output=True,
-            text=True,
-        )
-        if cert_manager_status.returncode == 0 and "enabled" in cert_manager_status.stdout:
-            click.echo("CertManager is installed. Using CertManager certificates instead.")
-            install_args.extend(["--set", "admissionWebhooks.certManager.enabled=true"])
-        else:
-            click.echo("CertManager is not installed. Using auto-generated certificates instead.")
-            install_args.extend(["--set", "admissionWebhooks.certManager.enabled=false"])
-            install_args.extend(["--set", "admissionWebhooks.autoGenerateCert.enabled=true"])
 
     subprocess.check_call(install_args)
 

@@ -24,3 +24,26 @@ class TestAddons(object):
             "running",
             label="app.kubernetes.io/component=controller-manager",
         )
+
+    def test_signoz(self):
+        """
+        Sets up and validates Signoz.
+        """
+        print("Enabling signoz")
+        microk8s_enable("signoz")
+        print("Validating signoz")
+        self.validate_signoz()
+        print("Disabling signoz")
+        microk8s_disable("signoz")
+
+    def validate_signoz(self):
+        """
+        Validate Signoz.
+        """
+
+        wait_for_pod_state(
+            "",
+            "signoz",
+            "running",
+            label="app.kubernetes.io/component=query-service",
+        )
