@@ -16,7 +16,7 @@ MICROK8S_STATUS = os.path.expandvars("$SNAP/microk8s-status.wrapper")
 @click.option("--version", required=False, default="0.68.1", type=str)
 @click.option("--namespace", required=False, default=DEFAULT_NAMESPACE, type=str)
 @click.option("--values", required=False, default="", type=str)
-def main(version, namespace, collector_image, values):
+def main(version, namespace, values):
     click.echo("Enabling signoz")
 
     subprocess.check_call(
