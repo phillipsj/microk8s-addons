@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# addons/openobserve/disable
+
+import click
+import os
+import subprocess
+import yaml
+
+DEFAULT_NAMESPACE = "openobserve"
+KUBECTL = os.path.expandvars("$SNAP/microk8s-kubectl.wrapper")
+HELMCTL = os.path.expandvars("$SNAP/microk8s-helm.wrapper")
+
+
+@click.command()
+def main():
+    click.echo("Disabling openobserve")
+
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    manifest = f"{current_path}/openobserve.yaml"
+
+    with open(manifest, "r", encoding="utf8") as f:
+        manifest = list(yaml.safe_load_all(f))
+
+    manifest_to_delete = yaml.safe_dump_all(manifest)
+    delete_cmd = [
+        KUBECTL,
+        "delete",
+        "-f",
+        "-",
+    ]
+
+    subprocess.run(delete_cmd, input=manifest_to_delete.encode())
+
+    click.echo(
+        "Disabled openobserve. Use 'microk8s disable hostpath-storage:destroy-storage' to free the storage space."
+    )
+
+
+if __name__ == "__main__":
+    main()

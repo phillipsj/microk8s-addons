@@ -24,3 +24,26 @@ class TestAddons(object):
             "running",
             label="app.kubernetes.io/component=controller-manager",
         )
+
+    def test_openobserve(self):
+        """
+        Sets up and validates OpenObserve.
+        """
+        print("Enabling openobserve")
+        microk8s_enable("openobserve")
+        print("Validating openobserve")
+        self.validate_openobserve()
+        print("Disabling openobserve")
+        microk8s_disable("openobserve")
+
+    def validate_openobserve(self):
+        """
+        Validate OpenObserve.
+        """
+
+        wait_for_pod_state(
+            "",
+            "openobserve",
+            "running",
+            label="app=openobserve",
+        )
