@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+# addons/openobserve/enable
+
+import json
+import os
+import subprocess
+import re
+import sys
+import yaml
+import base64
+import random
+import string
+
+import click
+
+REGEX_DISK_SIZE = "(^[1-9][0-9]{1,}|^[1-9][0-9]{1,})(Gi$)"
+KUBECTL = os.path.expandvars("$SNAP/microk8s-kubectl.wrapper")
+HELMCTL = os.path.expandvars("$SNAP/microk8s-helm.wrapper")
+MICROK8S_STATUS = os.path.expandvars("$SNAP/microk8s-status.wrapper")
+MICROK8S_ENABLE = os.path.expandvars("$SNAP/microk8s-enable.wrapper")
+
+
+@click.option("--password", required=False, default=None, type=str, help="Specifies password other than the default.")
+@click.option("--size", required=False, default="10Gi", type=str, help="Size of the storage.")
+@click.option(
+    "--storageclass",
+    required=False,
+    default=None,
+    type=str,
+    help="Storage class to use, if nothing is specificed defaults to hostpath storage.",
+)
+@click.command()
+def main(password, size, storageclass):
+    click.echo("Enabling openobserve")
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    manifest = f"{current_path}/openobserve.yaml"
+
+    if storageclass is None:
+        subprocess.run([MICROK8S_ENABLE, "hostpath-storage"])
+
+    command = [
+        KUBECTL,
+        "get",
+        "sc",
+        "--no-headers",
+        "-o",
+        "json",
+    ]
+
+    sclasses = subprocess.check_output(command).decode("utf8")
+    sclasses = json.loads(sclasses)
+    sclasses = [item["metadata"]["name"] for item in sclasses["items"]]
+
+    if storageclass is not None and storageclass not in sclasses:
+        click.echo(f"ERROR: Storage class {storageclass} doesn't exist.")
+        sys.exit(1)
+
+    if not re.match(REGEX_DISK_SIZE, size):
+        click.echo(
+            f"ERROR: The size of the registry should be higher or equal to 10Gi and match the regex: {REGEX_DISK_SIZE}"
+        )
+        sys.exit(1)
+
+    with open(manifest, "r", encoding="utf8") as f:
+        manifest = list(yaml.safe_load_all(f))
+        manifest[1]["spec"]["resources"]["requests"]["storage"] = size
+        click.echo(f"The registry will be created with the size of {size}.")
+        if storageclass is not None:
+            manifest[1]["spec"]["storageClassName"] = storageclass
+            click.echo(f"Storage class {storageclass} will be used.")
+        else:
+            click.echo("Default storage class will be used.")
+
+        if password is not None:
+            click.echo("Using provided password.")
+        else:
+            password = generate_password()
+            
+        manifest[2]["data"]["password"] = base64.b64encode(password.encode('utf-8'))
+
+    manifest_to_apply = yaml.safe_dump_all(manifest)
+
+    apply_cmd = [
+        KUBECTL,
+        "apply",
+        "-f",
+        "-",
+    ]
+
+    subprocess.run(apply_cmd, input=manifest_to_apply.encode())
+
+    click.echo("Enabled openobserve. Password can be found in the openobserve secret by running `kubectl get -n openobserve secrets/openobserve --template={{.data.password}} | base64 -d`")
+
+
+def generate_password(length=12):
+    characters = string.ascii_lowercase + string.digits + string.ascii_uppercase + '!' + '#'
+    password = ''.join(random.choice(characters) for _ in range(length))
+    return password
+
+if __name__ == "__main__":
+    main()

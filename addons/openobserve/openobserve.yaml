@@ -1,0 +1,97 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openobserve
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openobserve-claim
+  namespace: openobserve
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openobserve
+  namespace: openobserve
+data:
+  password: Q29tcGxleHBhc3MjMTIz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve
+  namespace: openobserve
+spec:
+  clusterIP: None
+  selector:
+    app: openobserve
+  ports:
+    - name: http
+      port: 5080
+      targetPort: 5080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openobserve
+  namespace: openobserve
+  labels:
+    name: openobserve
+spec:
+  serviceName: openobserve
+  replicas: 1
+  selector:
+    matchLabels:
+      name: openobserve
+      app: openobserve
+  template:
+    metadata:
+      labels:
+        name: openobserve
+        app: openobserve
+    spec:
+      securityContext:
+        fsGroup: 2000
+        runAsUser: 10000
+        runAsGroup: 3000
+        runAsNonRoot: true
+      containers:
+        - name: openobserve
+          image: public.ecr.aws/zinclabs/openobserve:latest
+          env:
+            - name: ZO_ROOT_USER_EMAIL
+              value: root@microk8s.local
+            - name: ZO_ROOT_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve
+                  key: password
+            - name: ZO_DATA_DIR
+              value: /data
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 4096m
+              memory: 2048Mi
+            requests:
+              cpu: 256m
+              memory: 50Mi
+          ports:
+            - containerPort: 5080
+              name: http
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openobserve-claim
